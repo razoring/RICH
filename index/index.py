@@ -18,6 +18,6 @@ async def on_ready():
 
 @bot.tree.command(name="status", description="Prints debug information.")
 async def status(interaction: discord.Interaction):
-    await interaction.response.send_message(f"W.I.M.P.(Weighted Index Market Predictor)\nLast Updated: {datetime.date}\nhttps://github.com/razoring/WIMP")
+    await interaction.response.send_message(f"W.I.M.P. (Weighted Index Market Predictor)\nLast Updated: {datetime.date.today}")
 
 bot.run(TOKEN)
