@@ -10,22 +10,28 @@ from scipy.interpolate import CubicSpline
 from scipy.stats import norm
 from datetime import datetime, timedelta
 
+colour = "#13f7c9"
+
 matplotlib.use('Agg') # set backend / disables ui opening
-matplotlib.rcParams['font.family'] = 'monospace' # set globalfont
+#matplotlib.rc('font', family='Courier New')
+#plt.rcParams['font.family'] = 'sans-serif'
+#plt.rcParams['font.sans-serif'] = ['Helvetica']
+#plt.rcParams['font.style'] = 'oblique'
+plt.style.use('dark_background')
+#plt.rc('font', weight='bold', size=8)
 
 def project(ticker, forward=90):
     stock = yf.Ticker(ticker)
-    
     history = stock.history(period="1mo")
     
     if history.empty:
-        raise ValueError("Could not fetch data for ticker.")
+        return None
 
     curPrice = history['Close'].iloc[-1]
     lastDate = history.index[-1]
     
     # IV calulcations
-    quantiles = np.linspace(0.05, 0.95, 25) # 19 layers for gradient
+    quantiles = np.linspace(0.05, 0.95, 19) # 19 layers for gradient
     
     # [days forward, [prices at quartiles]]
     anchorsX = [0]
@@ -60,7 +66,7 @@ def project(ticker, forward=90):
             for q in quantiles:
                 z = norm.ppf(q)
                 # geometric brownian motion calculation
-                projection = curPrice*np.exp(-0.5*mean**2 * tYears+mean * np.sqrt(tYears)*z)
+                projection = curPrice*np.exp(-3*mean**2 * tYears+mean * np.sqrt(tYears)*z) #-0.5*mean**2 * tYears+mean * np.sqrt(tYears)*z
                 expPrices.append(projection)
             
             anchorsX.append(expDays)
@@ -88,31 +94,34 @@ def project(ticker, forward=90):
     
 
     # plot the graph
-    fig, ax = plt.subplots(figsize=(16, 10), dpi=100)
-    ax.plot(history.index, history['Close'], color='#0055ff', linewidth=2, zorder=10)
+    fig, ax = plt.subplots(figsize=(20, 10), dpi=120)
+    ax.plot(history.index, history['Close'], color=colour, linewidth=2, zorder=10)
     minY = min(history['Close'].min(), np.min(smoothing))
     maxY = max(history['Close'].max(), np.max(smoothing))
-    ax.fill_between(history.index, minY * 0.90, history['Close'], color='#4da6ff', alpha=0.4)
+    ax.fill_between(history.index, minY * 0.90, history['Close'], color=colour, alpha=0.2)
     
     # start fan graph
     mid = len(quantiles) // 2
     for i in range(mid):
         lower_curve = smoothing[i]
         upper_curve = smoothing[-(i+1)]
-        ax.fill_between(future_dates, lower_curve, upper_curve, color='#4da6ff', alpha=0.10, lw=0)
+        ax.fill_between(future_dates, lower_curve, upper_curve, color=colour, alpha=0.15, lw=0)
 
     # 50% line
     median = smoothing[mid]
-    ax.plot(future_dates, median, color='#0055ff', linewidth=2)
+    ax.plot(future_dates, median, color=colour, linewidth=2)
 
     # labels
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    plt.xticks(rotation=90,fontsize=8)
+    ax.tick_params(axis='x', labelsize=8, rotation=90)
+    #plt.setp(ax.get_xticklabels(), weight='bold')
 
     ax.yaxis.set_major_locator(LinearLocator(numticks=40))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax.tick_params(axis='y',labelsize=8)
+    ax.yaxis.set_major_formatter(FormatStrFormatter('$%.2f'))
+    ax.tick_params(axis='y', labelsize=8)
+    #plt.setp(ax.get_yticklabels(), weight='bold')
+
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
 

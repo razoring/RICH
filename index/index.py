@@ -27,14 +27,17 @@ async def status(interaction: discord.Interaction):
     app_commands.Choice(name="2 months", value="60"),
     app_commands.Choice(name="3 months", value="90")])
 async def predict(interaction: discord.Interaction, ticker: str, duration: app_commands.Choice[str]):
+    await interaction.response.defer()
+    embed = discord.Embed()
     try:
-        await interaction.response.defer()
         image_buffer = project(ticker, int(duration.value))
-        file = discord.File(image_buffer, filename="output.png")
-        embed = discord.Embed()
-        embed.set_image(url="attachment://output.png")
-        await interaction.followup.send(file=file, embed=embed)
-    except:
-        await interaction.response.send_message("Sorry, we could not fulfill your request at this time. Please try again in a few seconds.")
+        if image_buffer:
+            file = discord.File(image_buffer, filename="output.png")
+            embed.set_image(url="attachment://output.png")
+            await interaction.followup.send(file=file, embed=embed)
+        else:
+            await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
+    except Exception as e:
+        await interaction.followup.send(f"```FATAL ERROR: {e}```")
 
 bot.run(TOKEN)
