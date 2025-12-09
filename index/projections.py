@@ -88,9 +88,9 @@ def project(ticker, forward, model):
 
     stock = yf.Ticker(ticker)
     history = stock.history(interval="1wk") if model == 0 else stock.history(period="2y")
-    
     if history.empty:
         return None
+    
     curPrice = history["Close"].iloc[-1]
     lastDate = history.index[-1]
     plotHistory = history[history.index > lastDate - timedelta(days=7)]
