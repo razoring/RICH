@@ -21,7 +21,7 @@ async def status(interaction: discord.Interaction):
     await interaction.response.send_message(f"Responsive Investment Calculation Heuristic (R.I.C.H.)")
 
 @bot.tree.command(name="predict", description="Predicts future movements of a given ticker")
-@app_commands.describe(ticker="The ticker symbol to predict (ex. AAPL, MSFT, GOOG)", duration="How many days to predict")
+@app_commands.describe(ticker="The ticker symbol to predict (ex. AAPL)", duration="How many days to predict")
 @app_commands.choices(duration=[
     app_commands.Choice(name="1 month", value="30"),
     app_commands.Choice(name="2 months", value="60"),
