@@ -105,15 +105,15 @@ def project(ticker, forward=90):
     ax.plot(future_dates, median, color='#0055ff', linewidth=2)
 
     # labels
-    plt.title(f"{ticker} Projection ({forward} Days)", loc='left', fontsize=14, fontweight='bold')
+    plt.title(f"{ticker} Projection ({forward} Days)", loc='left', fontsize=14, fontweight='bold', **{'fontname':'Helvetica'})
 
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    plt.xticks(rotation=90,fontsize=8)
+    plt.xticks(rotation=90,fontsize=8, **{'fontname':'Helvetica'})
 
     ax.yaxis.set_major_locator(LinearLocator(numticks=40))
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax.tick_params(axis='y',labelsize=8)
+    ax.tick_params(axis='y',labelsize=8, **{'fontname':'Helvetica'})
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
 
