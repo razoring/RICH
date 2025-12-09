@@ -3,3 +3,4 @@ discord
 yfinance
 matplotlib
 scipy
+prophet
