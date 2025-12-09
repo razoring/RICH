@@ -11,14 +11,15 @@ from scipy.stats import norm
 from datetime import datetime, timedelta
 
 colour = "#13f7c9"
+bg = "#0a131b"
 
-matplotlib.use('Agg') # set backend / disables ui opening
-#matplotlib.rc('font', family='Courier New')
-#plt.rcParams['font.family'] = 'sans-serif'
-#plt.rcParams['font.sans-serif'] = ['Helvetica']
-#plt.rcParams['font.style'] = 'oblique'
-plt.style.use('dark_background')
-#plt.rc('font', weight='bold', size=8)
+matplotlib.use("Agg") # set backend / disables ui opening
+#matplotlib.rc("font", family="Courier New")
+#plt.rcParams["font.family"] = "sans-serif"
+#plt.rcParams["font.sans-serif"] = ["Helvetica"]
+#plt.rcParams["font.style"] = "oblique"
+#plt.style.use("dark_background")
+#plt.rc("font", weight="bold", size=8)
 
 def project(ticker, forward=90):
     stock = yf.Ticker(ticker)
@@ -27,7 +28,7 @@ def project(ticker, forward=90):
     if history.empty:
         return None
 
-    curPrice = history['Close'].iloc[-1]
+    curPrice = history["Close"].iloc[-1]
     lastDate = history.index[-1]
     
     # IV calulcations
@@ -44,7 +45,7 @@ def project(ticker, forward=90):
             expDays = (expDate - lastDate.date()).days
             
             if expDays <= 0: continue
-            if expDays > forward + 15: break # don't calculate too far out
+            if expDays > forward + 15: break # don"t calculate too far out
             
             opt = stock.option_chain(exp)
             calls = opt.calls
@@ -52,10 +53,10 @@ def project(ticker, forward=90):
             
             # ATM (At the Money) IV
             centerStrike = curPrice
-            callsATM = calls.iloc[(calls['strike'] - centerStrike).abs().argsort()[:2]]
-            putsATM = puts.iloc[(puts['strike'] - centerStrike).abs().argsort()[:2]]
+            callsATM = calls.iloc[(calls["strike"] - centerStrike).abs().argsort()[:2]]
+            putsATM = puts.iloc[(puts["strike"] - centerStrike).abs().argsort()[:2]]
             
-            merged = pd.concat([callsATM['impliedVolatility'], putsATM['impliedVolatility']])
+            merged = pd.concat([callsATM["impliedVolatility"], putsATM["impliedVolatility"]])
             mean = merged.mean()
             
             if np.isnan(mean) or mean == 0: continue
@@ -82,12 +83,12 @@ def project(ticker, forward=90):
 
     yTransposed = np.array(anchorsY).T 
     futureDays = np.arange(0, forward + 1)
-    future_dates = [lastDate + timedelta(days=int(d)) for d in futureDays]
+    futureDates = [lastDate + timedelta(days=int(d)) for d in futureDays]
     
     smoothing = []
     for quantile_series in yTransposed:
-        # 'natural' boundary conditions for smooth start/end
-        cs = CubicSpline(anchorsX, quantile_series, bc_type='natural')
+        # "natural" boundary conditions for smooth start/end
+        cs = CubicSpline(anchorsX, quantile_series, bc_type="natural")
         smoothing.append(cs(futureDays))
         
     smoothing = np.array(smoothing)
@@ -95,52 +96,59 @@ def project(ticker, forward=90):
 
     # plot the graph
     fig, ax = plt.subplots(figsize=(20, 10), dpi=120)
-    ax.plot(history.index, history['Close'], color=colour, linewidth=2, zorder=10)
-    minY = min(history['Close'].min(), np.min(smoothing))
-    maxY = max(history['Close'].max(), np.max(smoothing))
-    ax.fill_between(history.index, minY * 0.90, history['Close'], color=colour, alpha=0.2)
+    fig.patch.set_facecolor(color=bg)
+    ax.plot(history.index, history["Close"], color=colour, linewidth=2, zorder=10)
+    minY = min(history["Close"].min(), np.min(smoothing))
+    maxY = max(history["Close"].max(), np.max(smoothing))
+    ax.fill_between(history.index, minY * 0.90, history["Close"], color=colour, alpha=0.2)
     
     # start fan graph
     mid = len(quantiles) // 2
     for i in range(mid):
         lower_curve = smoothing[i]
         upper_curve = smoothing[-(i+1)]
-        ax.fill_between(future_dates, lower_curve, upper_curve, color=colour, alpha=0.15, lw=0)
+        ax.fill_between(futureDates, lower_curve, upper_curve, color=colour, alpha=0.15, lw=0)
 
     # 50% line
     median = smoothing[mid]
-    ax.plot(future_dates, median, color=colour, linewidth=2)
+    ax.plot(futureDates, median, color=colour, linewidth=2)
 
     # labels
+    ax = plt.gca()
+    ax.set_facecolor(bg)
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    ax.tick_params(axis='x', labelsize=8, rotation=90)
-    #plt.setp(ax.get_xticklabels(), weight='bold')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
+    ax.tick_params(axis="x", labelsize=8, rotation=90, colors="gray")
+    #plt.setp(ax.get_xticklabels(), weight="bold")
 
     ax.yaxis.set_major_locator(LinearLocator(numticks=40))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('$%.2f'))
-    ax.tick_params(axis='y', labelsize=8)
-    #plt.setp(ax.get_yticklabels(), weight='bold')
+    ax.yaxis.set_major_formatter(FormatStrFormatter("$%.2f"))
+    ax.tick_params(axis="y", labelsize=8, colors="gray")
+    #plt.setp(ax.get_yticklabels(), weight="bold")
 
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
+    ax.tick_params(colors='gray', which='both')
+    ax.text(futureDates[-1], median[-1], f" ${median[-1]:.2f}", color=colour, fontweight='bold', fontsize=10, va='center', ha='left')
 
-    ax.spines['top'].set_visible(False)
-    ax.spines['left'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines['right'].set_color("white")
+    ax.spines['bottom'].set_color("white")
     
     # grid
-    ax.grid(True, which='major', axis='y', linestyle='--', alpha=0.5)
-    ax.grid(True, which='major', axis='x', linestyle=':', alpha=0.3) # added x-grid to see days better
+    ax.grid(True, which="major", axis="y", linestyle="--", alpha=0.5)
+    ax.grid(True, which="major", axis="x", linestyle=":", alpha=0.3) # added x-grid to see days better
     plt.ylim(minY * 0.98, maxY * 1.02)
     
     # combine both line and fan graphs
-    dates = list(history.index) + future_dates
+    dates = list(history.index) + futureDates
     plt.xlim(dates[0], dates[-1])
 
     plt.tight_layout()
     # save to memory buffer
     buf = io.BytesIO()
-    plt.savefig(buf, format='png')
+    plt.savefig(buf, format="png")
     plt.close(fig)
     buf.seek(0) # rewind buffer
     
