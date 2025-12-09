@@ -1,4 +1,6 @@
 import io
+import doctest
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -12,10 +14,10 @@ from scipy.interpolate import CubicSpline
 from scipy.stats import norm
 from datetime import datetime, timedelta
 
-import prophet as ph
+from prophet import Prophet as ph
 
 from themes import brand, bgDark
-
+# end of imports
 
 matplotlib.use("Agg") # set backend / disables ui opening
 #matplotlib.rc("font", family="Courier New")
@@ -25,23 +27,10 @@ matplotlib.use("Agg") # set backend / disables ui opening
 #plt.style.use("dark_background")
 plt.rc("font", weight="bold", size=10)
 
-def project(ticker, forward=90, model=0):
-    stock = yf.Ticker(ticker)
-    history = stock.history(interval="1wk") if model == 0 else stock.history(period="2y")
-    
-    if history.empty:
-        return None
-    curPrice = history["Close"].iloc[-1]
-    lastDate = history.index[-1]
-    
-    # IV calulcations
-    quantiles = np.linspace(0.05, 0.95, 19) # 19 divison
-    
-    # [days forward, [prices at quartiles]]
+def ivSmoothing(stock, lastDate, forward, curPrice, quantiles, futureDays):
+    anchorsY = [[curPrice] * len(quantiles)] # [days forward, [prices at quartiles]]
     anchorsX = [0]
-    anchorsY = [[curPrice] * len(quantiles)] 
-    
-    # Loop expirations
+
     for exp in stock.options: # Stock options = expirationjs
         try:
             expDate = datetime.strptime(exp, "%Y-%m-%d").date()
@@ -77,7 +66,6 @@ def project(ticker, forward=90, model=0):
             anchorsY.append(expPrices)
         except Exception:
             continue
-
     # begin interpolation
     if len(anchorsX) < 2:
         # Fallback if no options data found
@@ -85,17 +73,77 @@ def project(ticker, forward=90, model=0):
         anchorsY.append([curPrice] * len(quantiles))
 
     yTransposed = np.array(anchorsY).T 
-    futureDays = np.arange(0, forward + 1)
-    futureDates = [lastDate + timedelta(days=int(d)) for d in futureDays]
     
     smoothing = []
     for quantile_series in yTransposed:
         # "natural" boundary conditions for smooth start/end
         cs = CubicSpline(anchorsX, quantile_series, bc_type="natural")
         smoothing.append(cs(futureDays))
-        
-    smoothing = np.array(smoothing)
+    return np.array(smoothing)
+
+def project(ticker, forward=90, model=0):
+    """
+    >>> project("AMD", 90, 0)
+    """
+
+    stock = yf.Ticker(ticker)
+    history = stock.history(interval="1wk") if model == 0 else stock.history(period="2y")
     
+    if history.empty:
+        return None
+    curPrice = history["Close"].iloc[-1]
+    lastDate = history.index[-1]
+    plotHistory = history[history.index > lastDate - timedelta(days=7)]
+    quantiles = np.linspace(0.05, 0.95, 19) # 19 divisons
+
+    futureDays = np.arange(0, forward + 1)
+    futureDates = [lastDate + timedelta(days=int(d)) for d in futureDays]
+    
+    # IV calulcations
+    smoothing = []
+    if model != 1: # not model prophet
+        smoothing = ivSmoothing(stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
+    
+
+    prophetTrend = None
+    prophetSigma = None
+    if model != 0: # not model IV
+        prophetData = history.reset_index()[["Date", "Close"]]
+        prophetData.columns = ["ds", "y"]
+        prophetData["ds"] = prophetData["ds"].dt.tz_localize(None)
+
+        mProphet = ph(daily_seasonality=True, yearly_seasonality=True)
+        mProphet.fit(prophetData)
+
+        futureProphet = mProphet.make_future_dataframe(periods=forward, freq='W') # match freq
+        fcst = mProphet.predict(futureProphet)
+
+        futureFcst = fcst.tail(forward + 1)
+        prophetTrend = futureFcst["yhat"].values
+        
+        upper = futureFcst["yhat_upper"].values
+        lower = futureFcst["yhat_lower"].values 
+        prophetSigma = (upper - lower) / 2.56 # 80% confidence interval width / 2.56 ~= 1 standard deviation
+
+    if model == 1:
+        if prophetTrend is None:
+            raise "Prophet is NoneType"
+            
+        tempSmoothing = []
+        for q in quantiles:
+            z = norm.ppf(q)
+            line = prophetTrend + (z * prophetSigma)
+            tempSmoothing.append(line)
+        smoothing = np.array(tempSmoothing)
+    elif model == 2:
+        if prophetTrend is None:
+            pass 
+        else:
+            spread = smoothing - curPrice 
+            combinedSmoothing = []
+            for i in range(len(quantiles)):
+                combinedSmoothing.append(prophetTrend + spread[i])
+            smoothing = np.array(combinedSmoothing)
 
     # plot the graph
     fig, ax = plt.subplots(figsize=(20, 10), dpi=120)
@@ -147,7 +195,7 @@ def project(ticker, forward=90, model=0):
     plt.ylim(minY * 0.98, maxY * 1.02)
     
     # combine both line and fan graphs
-    dates = list(history[history.index > lastDate - timedelta(days=7)].index) + futureDates
+    dates = list(plotHistory.index) + futureDates
     plt.xlim(dates[0], dates[-1])
 
     plt.tight_layout()
@@ -158,3 +206,6 @@ def project(ticker, forward=90, model=0):
     buf.seek(0) # rewind buffer
     
     return buf
+
+if __name__ == "__main__":
+    doctest.testmod()

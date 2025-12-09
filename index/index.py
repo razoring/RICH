@@ -3,7 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import os
 import typing
-from projections_test import project
+from projections import project
+#from projections_test import project
 from dotenv import load_dotenv
 
 from themes import brand, bgDark
