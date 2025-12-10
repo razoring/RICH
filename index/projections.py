@@ -27,8 +27,8 @@ from themes import brand, bgDark
 
 #TODO clean up this code
 matplotlib.use("Agg") # set backend / disables ui opening
-logging.getLogger('prophet').setLevel(logging.WARNING) # pre setup / disable logging
-logging.getLogger('cmdstanpy').disabled = True
+logging.getLogger("prophet").setLevel(logging.WARNING) # pre setup / disable logging
+logging.getLogger("cmdstanpy").disabled = True
 #matplotlib.rc("font", family="Courier New")
 #plt.rcParams["font.family"] = "sans-serif"
 #plt.rcParams["font.sans-serif"] = ["Helvetica"]
@@ -117,7 +117,7 @@ def project(ticker, model):
         mProphet = ph(daily_seasonality=True, yearly_seasonality=True)
         mProphet.fit(prophetData)
 
-        futureProphet = mProphet.make_future_dataframe(periods=forward, freq='D') # match freq
+        futureProphet = mProphet.make_future_dataframe(periods=forward, freq="D") # match freq
         fcst = mProphet.predict(futureProphet)
 
         futureFcst = fcst.tail(forward + 1)
@@ -167,13 +167,13 @@ def project(ticker, model):
     
     #gradient logic
     verts = [(xNums[0], yFloor)] + list(zip(xNums, yVals)) + [(xNums[-1], yFloor)]
-    poly = Polygon(verts, transform=ax.transData, facecolor='none', edgecolor='none')
+    poly = Polygon(verts, transform=ax.transData, facecolor="none", edgecolor="none")
     ax.add_patch(poly)
     cTop = to_rgba(brand, alpha=0.3)
     cBot = to_rgba(brand, alpha=0.0)
-    gradientCmap = LinearSegmentedColormap.from_list('history_gradient', [cBot, cTop])
+    gradientCmap = LinearSegmentedColormap.from_list("history_gradient", [cBot, cTop])
     gradient = np.linspace(0, 1, 256).reshape(-1, 1)
-    im = ax.imshow(gradient, aspect='auto', cmap=gradientCmap, origin='lower', extent=[xNums[0], xNums[-1], yFloor, yVals.max()], zorder=1)
+    im = ax.imshow(gradient, aspect="auto", cmap=gradientCmap, origin="lower", extent=[xNums[0], xNums[-1], yFloor, yVals.max()], zorder=1)
     im.set_clip_path(poly)
     
     # fan graph
@@ -184,14 +184,15 @@ def project(ticker, model):
         ax.fill_between(futureDates, lower_curve, upper_curve, color=brand, alpha=0.15, lw=0)
 
     # legend
-    elements = [Line2D([0], [0], color=brand, lw=2, label=("50% Probability" if model != 1 else "Prediction"), linestyle= ("dashed" if model == 1 else "solid"))]
+    elements = []
     if model != 1:
         for i in range(0, mid, 1): 
             q = quantiles[i]
             ci = int(round(50-((1 - 2*q) * 50)))
             simulated_alpha = 1 - (1 - 0.15) ** (i + 1)
-            elements.append(Patch(facecolor=brand, edgecolor=None, alpha=simulated_alpha, label=f'{ci}% Probability'))
-    leg = ax.legend( handles=elements, loc='lower left', facecolor=bgDark, edgecolor='gray', framealpha=1.0, fancybox=True, labelcolor='white', fontsize=8, borderpad=0.8)
+            elements.append(Patch(facecolor=brand, edgecolor=None, alpha=simulated_alpha, label=f"{ci}% Probability"))
+    elements.append(Line2D([0], [0], color=brand, lw=2, label=("50% Probability" if model != 1 else "Prediction"), linestyle= ("dashed" if model == 1 else "solid")))
+    leg = ax.legend( handles=elements, loc="lower left", facecolor=bgDark, edgecolor="gray", framealpha=1.0, fancybox=True, labelcolor="white", fontsize=8, borderpad=0.8)
     leg.get_frame().set_linewidth(1)
 
     # 50% line
@@ -223,13 +224,13 @@ def project(ticker, model):
     ax.yaxis.set_label_position("right")
     ax.tick_params(axis="y", colors="gray")
     bbox = dict(boxstyle="square,pad=0.3", fc=bgDark, ec="none", alpha=1.0)
-    ax.annotate(f"${median[-1]:.2f}", xy=(1, median[-1]), xycoords=('axes fraction', 'data'), xytext=(5, 0), textcoords='offset points', va='center', ha='left', color=brand, fontweight='bold', fontsize=11, bbox=bbox,)
-    #ax.text(futureDates[-1], median[-1], f" ${median[-1]:.2f}", color=colour, fontweight='bold', fontsize=11, va='center', ha='left')
+    ax.annotate(f"${median[-1]:.2f}", xy=(1, median[-1]), xycoords=("axes fraction", "data"), xytext=(5, 0), textcoords="offset points", va="center", ha="left", color=brand, fontweight="bold", fontsize=11, bbox=bbox,)
+    #ax.text(futureDates[-1], median[-1], f" ${median[-1]:.2f}", color=colour, fontweight="bold", fontsize=11, va="center", ha="left")
 
     ax.spines["top"].set_visible(False)
     ax.spines["left"].set_visible(False)
-    ax.spines['right'].set_color("gray")
-    ax.spines['bottom'].set_color("gray")
+    ax.spines["right"].set_color("gray")
+    ax.spines["bottom"].set_color("gray")
     
     # grid
     ax.grid(True, which="major", axis="y", linestyle="--", alpha=0.5)
