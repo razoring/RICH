@@ -42,7 +42,7 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
         if image_buffer:
             file = discord.File(image_buffer, filename="output.png")
             embed.set_image(url="attachment://output.png")
-            await interaction.followup.send(f"{interaction.user.mention}",file=file, embed=embed)
+            await interaction.followup.send(f"Here is today's predictions {interaction.user.mention}:",file=file, embed=embed)
         else:
             await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
     except Exception as e:
