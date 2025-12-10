@@ -34,7 +34,7 @@ async def help(interaction: discord.Interaction):
 async def predict(interaction: discord.Interaction, ticker: str, model: typing.Optional[app_commands.Choice[str]]):
     await interaction.response.defer()
 
-    embed = discord.Embed(color=discord.Colour.teal())
+    embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
 
     try:
@@ -46,7 +46,7 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
             embed.add_field(name="Low: $999.99", value="Mkt Cap: 99T", inline=True)
             embed.add_field(name="Vol: 99M", value="Avg Vol: 99M", inline=True)
             embed.add_field(name="52WK High: 99", value="52WK Low: 99", inline=True)
-            await interaction.followup.send(f"Here is today's 90 predictions {interaction.user.mention}:",file=file, embed=embed, title=f"{ticker} (90 day prediction)")
+            await interaction.followup.send(f"Here is today's 90 predictions {interaction.user.mention}:",file=file, embed=embed)
 
         else:
             await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
