@@ -184,7 +184,7 @@ def project(ticker, model):
         ax.fill_between(futureDates, lower_curve, upper_curve, color=brand, alpha=0.15, lw=0)
 
     # legend
-    legend_elements = [Line2D([0], [0], color=brand, lw=2, label=("50% Probability" if model != 1 else "Prediction"))]
+    legend_elements = [Line2D([0], [0], color=brand, lw=2, label=("50% Probability" if model != 1 else "Prediction"), linestyle= ("dashed" if model == 1 else "solid"))]
     if model != 1:
         for i in range(0, mid, 1): 
             q = quantiles[i]
@@ -196,7 +196,7 @@ def project(ticker, model):
 
     # 50% line
     median = smoothing[mid] # make them start at the same spot
-    ax.plot(futureDates, median, color=brand, linewidth=2)
+    ax.plot(futureDates, median, color=brand, linewidth=2, linestyle= ("dashed" if model == 1 else "solid"))
 
     # labels
     ax = plt.gca()
