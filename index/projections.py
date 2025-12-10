@@ -187,7 +187,7 @@ def project(ticker, model):
         ci = int(round(50-((1 - 2*q) * 50)))
         simulated_alpha = 1 - (1 - 0.15) ** (i + 1)
         legend_elements.append(Patch(facecolor=brand, edgecolor=None, alpha=simulated_alpha, label=f'{ci}% Probability'))
-    leg = ax.legend( handles=legend_elements, loc='bottom left', facecolor=bgDark, edgecolor='gray', framealpha=1.0, fancybox=True, labelcolor='white', fontsize=8, borderpad=0.8)
+    leg = ax.legend( handles=legend_elements, loc='lower left', facecolor=bgDark, edgecolor='gray', framealpha=1.0, fancybox=True, labelcolor='white', fontsize=8, borderpad=0.8)
     leg.get_frame().set_linewidth(1)
 
     # 50% line
