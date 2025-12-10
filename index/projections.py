@@ -208,12 +208,23 @@ def project(ticker, model):
     ax.tick_params(axis="y", colors="gray")
     #plt.setp(ax.get_yticklabels(), weight="bold")
 
+    # y ticks
+    lastPrice = median[-1]
+    yRange = maxY - minY
+    rawStep = yRange / 25
+    allowedSteps = [0.01, 0.05, 0.10, 0.25, 0.50, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0]
+    step = min(allowedSteps, key=lambda x: abs(x - rawStep))
+    ticksUp = np.arange(lastPrice, maxY * 1.05, step)
+    ticksDown = np.arange(lastPrice - step, minY * 0.95, -step)
+    customTicks = np.sort(np.concatenate((ticksDown, ticksUp)))
+    ax.set_yticks(customTicks)
+    ax.yaxis.set_major_formatter(FormatStrFormatter("$%.2f"))
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position("right")
-    ax.tick_params(colors='gray', which='both')
-    #ax.text(futureDates[-1], median[-1], f" ${median[-1]:.2f}", color=colour, fontweight='bold', fontsize=11, va='center', ha='left')
+    ax.tick_params(axis="y", colors="gray")
     bbox = dict(boxstyle="square,pad=0.3", fc=bgDark, ec="none", alpha=1.0)
     ax.annotate(f"${median[-1]:.2f}", xy=(1, median[-1]), xycoords=('axes fraction', 'data'), xytext=(5, 0), textcoords='offset points', va='center', ha='left', color=brand, fontweight='bold', fontsize=11, bbox=bbox,)
+    #ax.text(futureDates[-1], median[-1], f" ${median[-1]:.2f}", color=colour, fontweight='bold', fontsize=11, va='center', ha='left')
 
     ax.spines["top"].set_visible(False)
     ax.spines["left"].set_visible(False)
