@@ -27,10 +27,13 @@ models = ["Implied Volatility", "Extrapolation", "Aggregate-Extrapolation", "Log
 - Make a feedback system (using webhooks)
 - Make an error-safe yfinance library of the most common types of data
 - Make a stocks info command
+- Stock news from yahoo finance
 - Make a points system
 - Implement the AI
 - Implement the help system
 - Telemetry data
+- Compare command
+- Alert command
 """
 
 @bot.event
