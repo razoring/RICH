@@ -9,6 +9,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib.patches import Polygon
+from matplotlib.colors import LinearSegmentedColormap, to_rgba
 
 from scipy.interpolate import CubicSpline
 from scipy.stats import norm
@@ -83,11 +85,11 @@ def ivSmoothing(stock, lastDate, forward, curPrice, quantiles, futureDays):
 
 def project(ticker, forward, model):
     # typecasting (caused all the model errors)
-    model = int(model) if type(model) == str else model
-    forward = int(forward) if type(model) == str else forward
+    model = int(model) if type(model) == str else 0
+    forward = int(forward) if type(model) == str else 90
 
     stock = yf.Ticker(ticker)
-    history = stock.history(interval="1wk") if model == 0 else stock.history(period="2y")
+    history = stock.history(period="1mo") if model == 0 else stock.history(period="1y")
     if history.empty:
         return None
     
@@ -99,14 +101,8 @@ def project(ticker, forward, model):
     futureDays = np.arange(0, forward + 1)
     futureDates = [lastDate + timedelta(days=int(d)) for d in futureDays]
     
-    # IV calulcations
     smoothing = []
-
-    print(model, type(model))
-    if model != 1: # not model prophet
-        smoothing = ivSmoothing(stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
-    
-
+    # Prophet predictions
     prophetTrend = None
     prophetSigma = None
     if model != 0: # not model IV
@@ -117,15 +113,20 @@ def project(ticker, forward, model):
         mProphet = ph(daily_seasonality=True, yearly_seasonality=True)
         mProphet.fit(prophetData)
 
-        futureProphet = mProphet.make_future_dataframe(periods=forward, freq='W') # match freq
+        futureProphet = mProphet.make_future_dataframe(periods=forward, freq='D') # match freq
         fcst = mProphet.predict(futureProphet)
 
         futureFcst = fcst.tail(forward + 1)
         prophetTrend = futureFcst["yhat"].values
+        prophetTrend += curPrice - prophetTrend[0]
         
-        upper = futureFcst["yhat_upper"].values
-        lower = futureFcst["yhat_lower"].values 
+        upper = futureFcst["yhat_upper"].values*0 #affect the fan graph
+        lower = futureFcst["yhat_lower"].values*0
         prophetSigma = (upper - lower) / 2.56 # 80% confidence interval width / 2.56 ~= 1 standard deviation
+
+    # IV calulcations
+    if model != 1: # not model prophet
+        smoothing = ivSmoothing(stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
 
     if model == 1:
         if prophetTrend is None:
@@ -150,12 +151,24 @@ def project(ticker, forward, model):
     # plot the graph
     fig, ax = plt.subplots(figsize=(20, 10), dpi=120)
     fig.patch.set_facecolor(color=bgDark)
-    ax.plot(history.index, history["Close"], color=brand, linewidth=2, zorder=10)
-    minY = min(history["Close"].min(), np.min(smoothing))
-    maxY = max(history["Close"].max(), np.max(smoothing))
-    ax.fill_between(history.index, minY * 0.90, history["Close"], color=brand, alpha=0.2)
+    ax.plot(plotHistory.index, plotHistory["Close"], color=brand, linewidth=2, zorder=10)
+    minY = min(plotHistory["Close"].min(), np.min(smoothing))
+    maxY = max(plotHistory["Close"].max(), np.max(smoothing))
+    xNums = mdates.date2num(plotHistory.index)
+    yVals = plotHistory["Close"].values
+    yFloor = minY * 0.90
     
-    # start fan graph
+    #gradient logic
+    verts = [(xNums[0], yFloor)] + list(zip(xNums, yVals)) + [(xNums[-1], yFloor)]
+    poly = Polygon(verts, transform=ax.transData, facecolor='none', edgecolor='none')
+    ax.add_patch(poly)
+    cTop = to_rgba(brand, alpha=0.3)
+    cBot = to_rgba(brand, alpha=0.0)
+    gradientCmap = LinearSegmentedColormap.from_list('history_gradient', [cBot, cTop])
+    gradient = np.linspace(0, 1, 256).reshape(-1, 1)
+    im = ax.imshow(gradient, aspect='auto', cmap=gradientCmap, origin='lower', extent=[xNums[0], xNums[-1], yFloor, yVals.max()], zorder=1)
+    im.set_clip_path(poly)
+    
     mid = len(quantiles) // 2
     for i in range(mid):
         lower_curve = smoothing[i]
@@ -163,7 +176,7 @@ def project(ticker, forward, model):
         ax.fill_between(futureDates, lower_curve, upper_curve, color=brand, alpha=0.15, lw=0)
 
     # 50% line
-    median = smoothing[mid]
+    median = smoothing[mid] # make them start at the same spot
     ax.plot(futureDates, median, color=brand, linewidth=2)
 
     # labels

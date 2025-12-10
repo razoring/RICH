@@ -25,16 +25,16 @@ async def help(interaction: discord.Interaction):
     await interaction.response.send_message(f"Responsive Investment Calculation Heuristic (R.I.C.H.)")
 
 @bot.tree.command(name="predict", description="Predicts future movements of a given ticker")
-@app_commands.describe(ticker="The ticker symbol to predict (ex. AAPL)", duration="How many days to predict", model="Choose model efficiency")
+@app_commands.describe(ticker="The ticker symbol to predict (ex. AAPL)", duration="How many days to predict", model="Choose model algorithm")
 @app_commands.choices(duration=[
     app_commands.Choice(name="30 days", value="30"),
     app_commands.Choice(name="60 days", value="60"),
     app_commands.Choice(name="90 days", value="90")])
 @app_commands.choices(model=[
-    app_commands.Choice(name="Implied Volatility (≤10s)", value="0"),
-    app_commands.Choice(name="Extrapolation (≤2m)", value="1"),
-    app_commands.Choice(name="Detailed Extrapolation (≤3m)", value="2"),
-    app_commands.Choice(name="Reasoning AI Analysis [UNAVAILABLE] (≤5m)", value="3")])
+    app_commands.Choice(name="Implied Volatility", value="0"),
+    app_commands.Choice(name="Extrapolation", value="1"),
+    app_commands.Choice(name="Aggregate-Extrapolation", value="2"),
+    app_commands.Choice(name="Logical Analysis [UNAVAILABLE]", value="3")])
 async def predict(interaction: discord.Interaction, ticker: str, duration: typing.Optional[app_commands.Choice[str]], model: typing.Optional[app_commands.Choice[str]]):
     await interaction.response.defer()
 
