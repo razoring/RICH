@@ -9,7 +9,7 @@ from discord import app_commands
 
 import yfinance as yf
 import pandas as pd
-from humanize import parse_number
+from humanize import numSuffix
 
 from projections import project
 from themes import brand, bgDark
@@ -44,8 +44,9 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
     embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
 
+    selectedModel = int(model.value) if type(model) == str else 2
+
     try:
-        selectedModel = int(model.value) if type(model) == str else 2
         image_buffer = project(ticker, selectedModel)
         if image_buffer:
             file = discord.File(image_buffer, filename="output.png")
@@ -60,21 +61,22 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
             now = pd.Timestamp.utcnow().tz_localize(None)
             one_year_ago = now - pd.DateOffset(years=1)
             last_close = yf.Ticker(ticker).history(period="5d")["Close"].iloc[-1]
+            one_year_ago = pd.Timestamp(one_year_ago, tz=div.index.tz)
             ttm_div = div[div.index >= one_year_ago].sum()
             yields = 100.0 * ttm_div / last_close if last_close > 0 else float("nan")
 
             embed.set_image(url="attachment://output.png")
             embed.add_field(name=f"High: ${round(history['High'].max(),2)}", value=f"Low: ${round(history['Low'].min(),2)}", inline=True)
             embed.add_field(name=f"Open: ${round(history['Open'].max(),2)}", value=f"Close: ${round(history['Close'].max(),2)}", inline=True)
-            embed.add_field(name=f"Vol: {round(parse_number(history['Volume'].max()),2)}", value=f"Beta: {round(parse_number(symbol.info.get('beta')),2)}", inline=True)
+            embed.add_field(name=f"Vol: {numSuffix(round(history['Volume'].max(),2))}", value=f"Beta: {numSuffix(round(symbol.info.get('beta', 0),2))}", inline=True)
             embed.add_field(name=f"52Wk High: ${round(year['High'].max(),2)}", value=f"52Wk Low: ${round(year['Low'].min(),2)}", inline=True)
-            embed.add_field(name=f"P/E: ${round(info.get('trailingPE', 0),2)}", value=f"EPS: ${round(symbol.info.get('trailingEps', 0),2)}", inline=True)
-            embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {datetime.fromtimestamp(info.get('exDividendDate', 0))}", inline=True)
+            embed.add_field(name=f"P/E: ${round(info.get('trailingPE', 0),2)}", value=f"EPS: ${round(symbol.info.get('trailingEps'),2)}", inline=True)
+            embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {pd.to_datetime(info.get('exDividendDate'))}", inline=True)
 
-            await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel)]}) {interaction.user.mention}:",file=file, embed=embed)
+            await interaction.followup.send(f"Here is today's predictions (Model {models[int(selectedModel)]}) {interaction.user.mention}:",file=file, embed=embed)
         else:
             await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
     except Exception as e:
-        await interaction.followup.send(f"```FATAL ERROR: {e}```")
+        await interaction.followup.send(f"```UNCAUGHT ERROR: {e.with_traceback}```")
 
 bot.run(TOKEN)
