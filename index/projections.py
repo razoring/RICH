@@ -35,13 +35,11 @@ logging.getLogger("cmdstanpy").disabled = True
 #plt.rcParams["font.style"] = "oblique"
 #plt.style.use("dark_background")
 
-def ivSmoothing(stock, lastDate, forward, curPrice, quantiles, futureDays):
+def ivSmoothing(options, stock, lastDate, forward, curPrice, quantiles, futureDays):
     anchorsY = [[curPrice] * len(quantiles)] # [days forward, [prices at quartiles]]
     anchorsX = [0]
-    if len(stock.options) <= 4:
-        return None
 
-    for exp in stock.options: # Stock options = expirationjs
+    for exp in options: # Stock options = expirationjs
         try:
             expDate = datetime.strptime(exp, "%Y-%m-%d").date()
             expDays = (expDate - lastDate.date()).days
@@ -132,9 +130,11 @@ def project(ticker, model):
 
     # IV calulcations
     if model != 1: # not model prophet
-        smoothing = ivSmoothing(stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
-        if smoothing == None:
+        options = stock.options
+        if len(stock.options) <= 3:
             return None
+        else:
+            smoothing = ivSmoothing(options=options, stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
 
     if model == 1:
         if prophetTrend is None:

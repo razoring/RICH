@@ -23,6 +23,16 @@ bot = commands.Bot(intents=intents, command_prefix="!")
 
 models = ["Implied Volatility", "Extrapolation", "Aggregate-Extrapolation", "Logical Analysis [UNAVAILABLE]"]
 
+"""TODO:
+- Make a feedback system (using webhooks)
+- Make an error-safe yfinance library of the most common types of data
+- Make a stocks info command
+- Make a points system
+- Implement the AI
+- Implement the help system
+- Usage tracking
+"""
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -41,7 +51,7 @@ async def help(interaction: discord.Interaction):
 async def predict(interaction: discord.Interaction, ticker: str, model: typing.Optional[app_commands.Choice[str]]):
     await interaction.response.defer()
 
-    embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker.capitalize()} (90 day prediction)")
+    embed = discord.Embed(color=discord.Colour.teal(), title=f"{str.upper(ticker)} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
     if type(model) is not type(None):
         selectedModel = int(model.value)
@@ -72,6 +82,7 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
         ex_div_date = info.get('exDividendDate')
         ex_div_str = datetime.fromtimestamp(ex_div_date).date() if ex_div_date else "N/A"
 
+        # causing errors, make that libaray ASAP
         embed.set_image(url="attachment://output.png")
         embed.add_field(name=f"High: ${round(history['High'].max(),2)}", value=f"Low: ${round(history['Low'].min(),2)}", inline=True)
         embed.add_field(name=f"Open: ${round(history['Open'].max(),2)}", value=f"Close: ${round(history['Close'].max(),2)}", inline=True)
@@ -80,10 +91,10 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
         embed.add_field(name=f"P/E: ${round(info.get('trailingPE', 0),2)}", value=f"EPS: ${round(symbol.info.get('trailingEps'),2)}", inline=True)
         embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {ex_div_str}", inline=True)
 
-        if warning:
+        if warning == True:
             embed.description = "Model has been changed because there were not enough datapoints to draw an accurate conclusion."
 
-        await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel if not warning else 1)]} Model) {interaction.user.mention}:",file=file, embed=embed)
+        await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel if warning == False else 1)]} Model) {interaction.user.mention}:",file=file, embed=embed)
     else:
         await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
 
