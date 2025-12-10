@@ -90,8 +90,6 @@ def ivSmoothing(stock, lastDate, forward, curPrice, quantiles, futureDays):
     return np.array(smoothing)
 
 def project(ticker, model):
-    # typecasting (caused all the model errors)
-    model = int(model) if type(model) == str else 0
     forward = 90
 
     stock = yf.Ticker(ticker)
