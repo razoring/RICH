@@ -31,9 +31,10 @@ models = ["Implied Volatility", "Extrapolation", "Aggregate-Extrapolation", "Log
 - Make a points system
 - Implement the AI
 - Implement the help system
-- Telemetry data
+- Telemetry data (get github version, and save options data [preferably use data with a date range])
 - Compare command
 - Alert command
+- Release version with github
 """
 
 @bot.event
