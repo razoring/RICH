@@ -43,8 +43,8 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
 
     embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
-
-    selectedModel = int(model.value) if type(model) == str else 2
+    print(type(model))
+    selectedModel = int(model.value) if type(model) is not None else 2
 
     try:
         image_buffer = project(ticker, selectedModel)
@@ -73,7 +73,7 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
             embed.add_field(name=f"P/E: ${round(info.get('trailingPE', 0),2)}", value=f"EPS: ${round(symbol.info.get('trailingEps'),2)}", inline=True)
             embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {pd.to_datetime(info.get('exDividendDate'))}", inline=True)
 
-            await interaction.followup.send(f"Here is today's predictions (Model {models[int(selectedModel)]}) {interaction.user.mention}:",file=file, embed=embed)
+            await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel)]} Model) {interaction.user.mention}:",file=file, embed=embed)
         else:
             await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
     except Exception as e:
