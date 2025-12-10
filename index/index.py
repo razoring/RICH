@@ -43,7 +43,6 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
 
     embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
-    print(type(model))
     selectedModel = int(model.value) if type(model) is not None else 2
 
     try:
@@ -59,11 +58,11 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
             # yield courtesy of: https://www.khueapps.com/blog/article/how-to-fetch-stock-dividend-data-with-python
             div = symbol.dividends
             now = pd.Timestamp.utcnow().tz_localize(None)
-            one_year_ago = now - pd.DateOffset(years=1)
-            last_close = yf.Ticker(ticker).history(period="5d")["Close"].iloc[-1]
-            one_year_ago = pd.Timestamp(one_year_ago, tz=div.index.tz)
-            ttm_div = div[div.index >= one_year_ago].sum()
-            yields = 100.0 * ttm_div / last_close if last_close > 0 else float("nan")
+            year = now - pd.DateOffset(years=1)
+            lastClose = yf.Ticker(ticker).history(period="5d")["Close"].iloc[-1]
+            yearAgo = pd.Timestamp(yearAgo, tz=div.index.tz)
+            ttm_div = div[div.index >= yearAgo].sum()
+            yields = 100.0 * ttm_div / lastClose if lastClose > 0 else float("nan")
 
             embed.set_image(url="attachment://output.png")
             embed.add_field(name=f"High: ${round(history['High'].max(),2)}", value=f"Low: ${round(history['Low'].min(),2)}", inline=True)
