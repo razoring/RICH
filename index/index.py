@@ -41,14 +41,18 @@ async def help(interaction: discord.Interaction):
 async def predict(interaction: discord.Interaction, ticker: str, model: typing.Optional[app_commands.Choice[str]]):
     await interaction.response.defer()
 
-    embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker} (90 day prediction)")
+    embed = discord.Embed(color=discord.Colour.teal(), title=f"{ticker.capitalize()} (90 day prediction)")
     #embed.set_footer(text=f"{interaction.user.mention}")
     if type(model) is not type(None):
         selectedModel = int(model.value)
     else:
         selectedModel = 2
 
+    warning = False
     image_buffer = project(ticker, selectedModel)
+    if image_buffer == None:
+        warning = True
+        image_buffer = project(ticker, 1)
     if image_buffer:
         file = discord.File(image_buffer, filename="output.png")
 
@@ -65,6 +69,8 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
         yearAgo = pd.Timestamp(yearAgo, tz=div.index.tz)
         ttmDiv = div[div.index >= yearAgo].sum()
         yields = 100.0 * ttmDiv / close if close > 0 else float("nan")
+        ex_div_date = info.get('exDividendDate')
+        ex_div_str = datetime.fromtimestamp(ex_div_date).date() if ex_div_date else "N/A"
 
         embed.set_image(url="attachment://output.png")
         embed.add_field(name=f"High: ${round(history['High'].max(),2)}", value=f"Low: ${round(history['Low'].min(),2)}", inline=True)
@@ -72,9 +78,12 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
         embed.add_field(name=f"Vol: {numSuffix(round(history['Volume'].max(),2))}", value=f"Beta: {numSuffix(round(symbol.info.get('beta', 0),2))}", inline=True)
         embed.add_field(name=f"52Wk High: ${round(year['High'].max(),2)}", value=f"52Wk Low: ${round(year['Low'].min(),2)}", inline=True)
         embed.add_field(name=f"P/E: ${round(info.get('trailingPE', 0),2)}", value=f"EPS: ${round(symbol.info.get('trailingEps'),2)}", inline=True)
-        embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {datetime.fromtimestamp(info.get('exDividendDate')).date()}", inline=True)
+        embed.add_field(name=f"Yield: {round(yields,2)}%", value=f"Ex. Dividend: {ex_div_str}", inline=True)
 
-        await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel)]} Model) {interaction.user.mention}:",file=file, embed=embed)
+        if warning:
+            embed.description = "Model has been changed because there were not enough datapoints to draw an accurate conclusion."
+
+        await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel if not warning else 1)]} Model) {interaction.user.mention}:",file=file, embed=embed)
     else:
         await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
 

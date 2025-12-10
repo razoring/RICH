@@ -38,6 +38,8 @@ logging.getLogger("cmdstanpy").disabled = True
 def ivSmoothing(stock, lastDate, forward, curPrice, quantiles, futureDays):
     anchorsY = [[curPrice] * len(quantiles)] # [days forward, [prices at quartiles]]
     anchorsX = [0]
+    if len(stock.options) <= 4:
+        return None
 
     for exp in stock.options: # Stock options = expirationjs
         try:
@@ -131,6 +133,8 @@ def project(ticker, model):
     # IV calulcations
     if model != 1: # not model prophet
         smoothing = ivSmoothing(stock=stock,lastDate=lastDate,forward=forward,curPrice=curPrice,quantiles=quantiles, futureDays=futureDays)
+        if smoothing == None:
+            return None
 
     if model == 1:
         if prophetTrend is None:
