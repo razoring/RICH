@@ -16,6 +16,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(intents=intents, command_prefix="!")
 
+models = ["Implied Volatility", "Extrapolation", "Aggregate-Extrapolation", "Logical Analysis [UNAVAILABLE]"]
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -27,10 +29,10 @@ async def help(interaction: discord.Interaction):
 @bot.tree.command(name="predict", description="Predicts future movements of a given ticker")
 @app_commands.describe(ticker="The ticker symbol to predict (ex. AAPL)", model="Choose model algorithm")
 @app_commands.choices(model=[
-    app_commands.Choice(name="Implied Volatility", value="0"),
-    app_commands.Choice(name="Extrapolation", value="1"),
-    app_commands.Choice(name="Aggregate-Extrapolation", value="2"),
-    app_commands.Choice(name="Logical Analysis [UNAVAILABLE]", value="3")])
+    app_commands.Choice(name=models[0], value="0"),
+    app_commands.Choice(name=models[1], value="1"),
+    app_commands.Choice(name=models[2], value="2"),
+    app_commands.Choice(name=models[3], value="3")])
 async def predict(interaction: discord.Interaction, ticker: str, model: typing.Optional[app_commands.Choice[str]]):
     await interaction.response.defer()
 
@@ -38,15 +40,19 @@ async def predict(interaction: discord.Interaction, ticker: str, model: typing.O
     #embed.set_footer(text=f"{interaction.user.mention}")
 
     try:
-        image_buffer = project(ticker, model.value if model != None else 2)
+        print(type(model))
+        selectedModel = model.value if model != None else 2
+        image_buffer = project(ticker, selectedModel)
         if image_buffer:
             file = discord.File(image_buffer, filename="output.png")
             embed.set_image(url="attachment://output.png")
-            embed.add_field(name="Open: $999.99", value="High: $999.99", inline=True)
-            embed.add_field(name="Low: $999.99", value="Mkt Cap: 99T", inline=True)
+            embed.add_field(name="High: $999.99", value="Low: $999.99", inline=True)
+            embed.add_field(name="Open: $999.99", value="Close: 99T", inline=True)
             embed.add_field(name="Vol: 99M", value="Avg Vol: 99M", inline=True)
             embed.add_field(name="52WK High: 99", value="52WK Low: 99", inline=True)
-            await interaction.followup.send(f"Here is today's 90 predictions {interaction.user.mention}:",file=file, embed=embed)
+            embed.add_field(name="P/E: $999", value="EPS: $99", inline=True)
+            embed.add_field(name="Yield: 0.09%", value="Ex. Dividend Date: 09/09/29", inline=True)
+            await interaction.followup.send(f"Here is today's predictions ({models[int(selectedModel)]}) {interaction.user.mention}:",file=file, embed=embed)
 
         else:
             await interaction.followup.send("```ERROR: Please check you entered the ticker symbol correct.```")
